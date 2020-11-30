@@ -21,13 +21,17 @@ def wscrape():
 
     containers = page_soup.findAll('span','elementor-button-text')
 
+    author_list = ['Bengan','Giganten','dybban','Vichyn']
+
     for container in containers:
-        if 'Bengan' or 'Dybban' or 'Giganten' or 'Vichyn' or 'Timman' or 'Rejken' in str(container):
+        if any(x in str(container) for x in author_list):
+            
             client.messages.create(
                 to='+46760471200',
                 from_='+12513094758',
                 body='GTO-andelar uppe: https://gamblingcabin.se/andelar-spela-tillsammans/'
             )
+            
             break
 
 while True:
