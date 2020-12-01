@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup as soup
 
 
 def wscrape():
+    print('Script initiated')
     # Send message
     account_sid = 'ACaeee2b5673a49dd89e983783e3a05b19'
     auth_token = '9c85117ecb761a410802b856a8e376ce'
@@ -21,11 +22,10 @@ def wscrape():
 
     containers = page_soup.findAll('span','elementor-button-text')
 
-    author_list = ['Bengan','Giganten','dybban','Vichyn']
+    author_list = ['Bengan','dybban','Giganten']
 
     for container in containers:
         if any(x in str(container) for x in author_list):
-            
             client.messages.create(
                 to='+46760471200',
                 from_='+12513094758',
