@@ -6,7 +6,7 @@ import openpyxl
 
 
 driver = webdriver.Chrome('chromedriver')
-driver.get('https://spela.svenskaspel.se/europatipset/')
+driver.get('https://spela.svenskaspel.se/stryktipset/')
 data = driver.find_elements_by_xpath('//div[@class="statistics-box"]')
 team_names = driver.find_elements_by_xpath('//span[@class="f-550 js-match match-header"]')
 
@@ -57,7 +57,7 @@ for i in range(13):
     df.iloc[i,9] = ((df.loc[i,'2_str']) - (df.loc[i,'2_odds'] ** -1)) * 100
 
 
-df.to_excel('Tips.xlsx',sheet_name = 'Sheet_name_1')
+df.to_excel('Stryktipset.xlsx',sheet_name = 'Sheet_name_1')
 
 driver.close()
 
