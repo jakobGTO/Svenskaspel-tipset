@@ -24,16 +24,22 @@ def wscrape():
 
     author_list = ['Bengan','dybban','Giganten']
 
+    tid = time.localtime()
+    timme = tid[3]
+    minut = tid[4]
+    body_string = f"{timme}:{minut} https://gamblingcabin.se/andelar-spela-tillsammans/"
+
     for container in containers:
         if any(x in str(container) for x in author_list):
             client.messages.create(
                 to='+46760471200',
                 from_='+12513094758',
-                body='GTO-andelar uppe: https://gamblingcabin.se/andelar-spela-tillsammans/'
+                body=body_string
             )
-            
             break
+            
+
 
 while True:
     wscrape()
-    time.sleep(1800)
+    time.sleep(900)
