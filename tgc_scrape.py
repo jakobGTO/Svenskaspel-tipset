@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup as soup
 def wscrape():
     print('Script initiated')
     # Send message
-    account_sid = 'ACaeee2b5673a49dd89e983783e3a05b19'
-    auth_token = 'a8b95ccc6701b2e32ad95432c85b16b5'
+    account_sid = 'X'
+    auth_token = 'X'
 
     client = Client(account_sid, auth_token)
 
