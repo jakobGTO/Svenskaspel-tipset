@@ -9,7 +9,7 @@ def wscrape():
     print('Script initiated')
     # Send message
     account_sid = 'ACaeee2b5673a49dd89e983783e3a05b19'
-    auth_token = '9c85117ecb761a410802b856a8e376ce'
+    auth_token = 'a8b95ccc6701b2e32ad95432c85b16b5'
 
     client = Client(account_sid, auth_token)
 
@@ -22,7 +22,7 @@ def wscrape():
 
     containers = page_soup.findAll('span','elementor-button-text')
 
-    author_list = ['Giganten','Bengan','Dybban','dybban','Vichyn','Podden']
+    author_list = ['Giganten','Bengan','Vichyn','Podden']
 
     tid = time.localtime()
     timme = tid[3]
@@ -42,4 +42,4 @@ def wscrape():
 
 while True:
     wscrape()
-    time.sleep(300)
+    time.sleep(600)
