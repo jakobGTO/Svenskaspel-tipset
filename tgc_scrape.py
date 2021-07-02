@@ -22,7 +22,7 @@ def wscrape():
 
     containers = page_soup.findAll('span','elementor-button-text')
 
-    author_list = ['Giganten','Bengan','Vichyn','Podden']
+    author_list = ['Bengan','Vichyn','Dybban','dybban']
 
     tid = time.localtime()
     timme = tid[3]
@@ -42,4 +42,4 @@ def wscrape():
 
 while True:
     wscrape()
-    time.sleep(600)
+    time.sleep(30)
