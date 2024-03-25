@@ -1,14 +1,15 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 import pandas as pd
 import numpy as np
 import openpyxl
 
 
-driver = webdriver.Chrome('chromedriver')
+driver = webdriver.Chrome()
 driver.get('https://spela.svenskaspel.se/stryktipset/')
-data = driver.find_elements_by_xpath('//div[@class="statistics-box"]')
-team_names = driver.find_elements_by_xpath('//span[@class="f-550 js-match match-header"]')
+data = driver.find_element(by=By.XPATH,value='//div[@class="stat-trend stat-trend-neutral"]')
+team_names = driver.find_element(by=By.XPATH,value='//span[@class="f-550 js-match match-header"]')
 
 data_list = []
 for rows in data:
@@ -43,9 +44,15 @@ df['X_str'] = df['X_str'].str.rstrip('%').astype('float')/100.0
 df['2_str'] = df['2_str'].str.rstrip('%').astype('float')/100.0
 
 for i in range(13):
-    df.loc[i,'1_odds'] = float(str(df.loc[i,'1_odds']).replace(',','.'))
-    df.loc[i,'X_odds'] = float(str(df.loc[i,'X_odds']).replace(',','.'))
-    df.loc[i,'2_odds'] = float(str(df.loc[i,'2_odds']).replace(',','.'))
+    try:
+        df.loc[i,'1_odds'] = float(str(df.loc[i,'1_odds']).replace(',','.'))
+        df.loc[i,'X_odds'] = float(str(df.loc[i,'X_odds']).replace(',','.'))
+        df.loc[i,'2_odds'] = float(str(df.loc[i,'2_odds']).replace(',','.'))
+    except:
+        df.loc[i,'1_odds'] = 1e-4
+        df.loc[i,'X_odds'] = 1e-4
+        df.loc[i,'2_odds'] = 1e-4
+
 
 df['1 Över/Understreckning (+/-)'] = np.nan
 df['X Över/Understreckning (+/-)'] = np.nan
