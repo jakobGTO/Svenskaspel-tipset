@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import random
 import math
+from itertools import product
+from collections import defaultdict
 
 def get_kupong(tipstyp):
     driver = webdriver.Chrome()
@@ -50,7 +52,8 @@ def format_data(data):
     odds_list = [[float(odds.replace(',', '.')) for odds in inner_list] for inner_list in odds_list]
 
     #Konvertera odds till % skapa lista för värde
-    odds_list = [[1/item for item in odds] for odds in odds_list]
+
+    prob_list = [[1/item for item in odds] for odds in odds_list]
 
     #print(streck_list, '\n')
     #print(odds_list, '\n')
@@ -59,158 +62,107 @@ def format_data(data):
     value_list = []
 
     for i in range(0, len(odds_list)):
-        value_list.append([x - y for x,y in zip(odds_list[i], streck_list[i])])
+        value_list.append([x - y for x,y in zip(prob_list[i], streck_list[i])])
 
     #print(value_list)
 
     return value_list, odds_list, streck_list
+        
+def risk_levels(odds_grid):
+    odds_grid = np.array(odds_grid)
     
-def factorize(num):
-    factors = []
-    for divisor in [2, 3]:
-        while num % divisor == 0:
-            factors.append(divisor)
-            num //= divisor
-    if num > 1:
-        factors.append(num)
-    return factors
-
-def combinations(num):
-    factors = factorize(num)
-    combinations = []
-    while factors:
-        combo = []
-        current_product = 1
-        for factor in factors:
-            if current_product * factor <= num:
-                combo.append(factor)
-                current_product *= factor
-            else:
-                break
-        combinations.append(combo)
-        for factor in combo:
-            factors.remove(factor)
-
-
-    gard_dict = {'Antal halv':0, 'Antal hel':0}
-    for i in combinations[0]:
-        if i == 2:
-            gard_dict['Antal halv'] += 1
-        else:
-            gard_dict['Antal hel'] += 1
-
-    return gard_dict
-
-def get_risk(streck_list):
-    streck_list = np.array(streck_list)
-    min_risk = np.argmax(streck_list, axis=1)
-    max_risk = np.argmin(streck_list, axis=1)
+    # Genererar alla olika kombinationer av enkel rader
+    all_combinations = list(product(range(3), repeat=13))
     
-    min_risk_list = []
-    max_risk_list = []
-
-    for i,row in enumerate(min_risk):
-        min_risk_list.append(streck_list[i, row])
-
-    for j,row in enumerate(max_risk):
-        max_risk_list.append(streck_list[j, row])
-
-    minrisk_median = np.median(min_risk_list)
-    maxrisk_median = np.median(max_risk_list)
-
-    interval_width = (minrisk_median + maxrisk_median) / 2
-    threshold_list = [maxrisk_median, interval_width, minrisk_median]
-
-    return threshold_list
-
-def get_rader(value_list, streck_list, risk_level, n_rader, viz):
-    """
-    1. Lista teckenvärde bäst till sämst för hela kupongen
-    2. Välj ut det antal tecken som uppnår angivet pris, välj först ut grundrad och addera sedan garderingar för valt pris
-    3. Kolla snitt utdelning för denna kupong
-    4. Om snitt utdelningen är under vald tröskel kupongen färdig
-    5. Annars ersätt det tecken med minst värde, kontrollera mot utdelnings tröskel, repetera 
-
-    steg 5 måste testa sig fram vad som ska ersätta, om vi ersätter tecken med minst värde och uppåt kan bli problem med att bara super högoddsare kvar tillslut etc etc.
-    """
-    value_list = np.array(value_list)
-
-    #1. Hitta bäst grundrad
-    grund_values = np.max(value_list, axis=1)
-    grund_index = np.vstack((np.arange(13),np.argmax(value_list, axis=1)))
-
-    #2. Hitta bäst garderingar för angivet pris
-
-    ## Halvgarderuingar
-    n_halvgarderingar = combinations(n_rader)['Antal halv']
-    n_helgarderingar = combinations(n_rader)['Antal hel']
-    n_halvgarderingar = n_halvgarderingar + n_helgarderingar
-
-
-    sorted_indexes = np.argsort(value_list, axis=1)
-    second_highest_indexes = sorted_indexes[:, -2]
-    second_highest_values = value_list[np.arange(len(value_list)), second_highest_indexes]
-
-    top_halvgarderingar_row = np.argpartition(-second_highest_values, n_halvgarderingar)[:n_halvgarderingar]
-    top_halvgarderingar_col = second_highest_indexes[top_halvgarderingar_row]
-    top_halvgarderingar = np.array((top_halvgarderingar_row, top_halvgarderingar_col))
-
-    #print(grund_index)
-    #print(top_halvgarderingar)
-
-    ## Helgarderingar
-    sorted_indexes = np.argsort(value_list[top_halvgarderingar_row], axis=1)
-    third_highest_indexes = sorted_indexes[:, -3]
-    third_highest_values = value_list[top_halvgarderingar_row][np.arange(len(value_list[top_halvgarderingar_row])), third_highest_indexes]
-
-    top_helgarderingar_row = np.argpartition(-third_highest_values, n_helgarderingar)[:n_helgarderingar]
-    top_helgarderingar_col = third_highest_indexes[top_helgarderingar_row]
-    top_helgarderingar = np.array((top_halvgarderingar_row[top_helgarderingar_row], top_helgarderingar_col))
-
-    #print(top_helgarderingar)
-
-    viz_array = np.full((13,3), ".", dtype='<U1')
-    viz_array[grund_index[0], grund_index[1]] = 'X'
-    viz_array[top_halvgarderingar[0], top_halvgarderingar[1]] = 'X'
-    viz_array[top_helgarderingar[0], top_helgarderingar[1]] = 'X'
-
-    res_array = np.zeros((13,3))
-    res_array[grund_index[0], grund_index[1]] = 1
-    res_array[top_halvgarderingar[0], top_halvgarderingar[1]] = 1
-    res_array[top_helgarderingar[0], top_helgarderingar[1]] = 1
-
-    if viz == True:
-        for i,row in enumerate(viz_array):
-            print(i+1, row)
-
-    streck_list = np.array(streck_list)
-    streck_list = np.concatenate((streck_list[grund_index[0], grund_index[1]], streck_list[top_halvgarderingar[0], top_halvgarderingar[1]], streck_list[top_helgarderingar[0], top_helgarderingar[1]]))
+    # Beräknar totala odds för alla rad kombos
+    total_odds = [np.prod([odds_grid[i, combo[i]] for i in range(13)]) for combo in all_combinations]
     
-    print('Streck värden')
-    print("Mean:", np.mean(streck_list))
-    print("Median:", np.median(streck_list))
-    print("Standard Deviation:", np.std(streck_list))
-    print("Minimum:", np.min(streck_list))
-    print("Maximum:", np.max(streck_list))
+    # Index med lägst och högst odds
+    highest_odds_index = np.argmax(total_odds)
+    lowest_odds_index = np.argmin(total_odds)
 
-    return res_array
+    # Hitta högst och lägst odds, dela upp i 4 nivåer
+    highest_odds = total_odds[highest_odds_index]
+    lowest_odds = total_odds[lowest_odds_index]
+
+    range_value = highest_odds - lowest_odds
+    quartile_size = range_value / 4
+
+    quartiles = {
+        "low risk":(lowest_odds, lowest_odds + quartile_size),
+        "medium-low risk":(lowest_odds + quartile_size, lowest_odds + 2 * quartile_size),
+        "medium-high risk":(lowest_odds + 2 * quartile_size, lowest_odds + 3 * quartile_size),
+        "high risk":(lowest_odds + 3 * quartile_size, highest_odds)
+    }
+
+    return quartiles
+
+def select_optimal_tickets(value_list, odds_list, number_of_tickets, risk_level, risk_levels):
+    value_array = np.array(value_list)
+    odds_array = np.array(odds_list)
+    
+    # Genererar alla olika kombinationer av enkel rader
+    all_combinations = list(product(range(3), repeat=13))
+
+    # Beräknar totala värdet och odds för varje rad
+    combination_values = []
+    combination_odds = []
+    for combo in all_combinations:
+        value = sum(value_array[i, combo[i]] for i in range(13))
+        odds = np.prod([odds_array[i, combo[i]] for i in range(13)])
+        combination_values.append(value)
+        combination_odds.append(odds)
+    
+    # Sorterar för rader med högst värde
+    sorted_indices = np.argsort(combination_values)[::-1]
+    
+    # Väljer de med högst värde upp till antal rader vi vill ha
+    selected_tickets = sorted_indices[:number_of_tickets]
+    
+    # Hittar min och max risk
+    min_risk, max_risk = risk_levels[risk_level]
+    
+    # Justerar rader för att hamna inom risk nivå
+    max_iterations = 1_000_000
+    for _ in range(max_iterations):
+        average_odds = np.mean([combination_odds[i] for i in selected_tickets])
+        
+        if min_risk <= average_odds <= max_risk:
+            break
+        
+        if average_odds > max_risk:
+            # Byt ut raden med lägst värde med den rad med högst värde vi ännu inte testat
+            lowest_value_index = min(selected_tickets, key=lambda x: combination_values[x])
+            for i in sorted_indices:
+                if i not in selected_tickets and combination_odds[i] < combination_odds[lowest_value_index]:
+                    selected_tickets.remove(lowest_value_index)
+                    selected_tickets.append(i)
+                    break
+    else:
+        print("Vi har fastnat")
+    
+    selected_combinations = [all_combinations[i] for i in selected_tickets]
+    
+    return selected_combinations, average_odds
+
+def combination_to_string(combo):
+    return ','.join(['1' if x == 0 else 'X' if x == 1 else '2' for x in combo])
 
 if __name__ == '__main__':
-    np.random.seed(42)
-
     kupong = get_kupong('stryktipset')
     value_list, odds_list, streck_list = format_data(kupong)
-
-    #hög risk = [0, risk_thresholds[0]]
-    #medium hög = [risk_thresholds[0], risk_thresholds[1]]
-    #medium låg = [risk_thresholds[1], risk_thresholds[2]]
-    #låg = [risk_thresholds[2], 1]
-    risk_thresholds = get_risk(streck_list = streck_list)
-
-
-    get_rader(value_list = value_list, 
-                streck_list = streck_list,
-                risk_level = 'high',
-                n_rader=288,
-                viz=True)
+    risk_level = risk_levels(odds_list)
+    number_of_tickets = 256
+    selected_risk_level = 'low risk'
     
+    optimal_tickets, average_odds = select_optimal_tickets(value_list, odds_list, number_of_tickets, selected_risk_level, risk_level)
+
+    output_lines = ["Stryktipset"]  
+    for i, ticket in enumerate(optimal_tickets, 1):
+        ticket_str = f"E,{combination_to_string(ticket)}"
+        output_lines.append(ticket_str)
+        #print(ticket_str)
+
+    file_path = "D:/enkla_rader.txt"
+    with open(file_path, 'w') as f:
+        f.write('\n'.join(output_lines))
